@@ -37,6 +37,18 @@
     
     [self.view addSubview:_segmentControlView];
     
+    _segmentControlView.translatesAutoresizingMaskIntoConstraints = NO;
+    
+    NSLayoutConstraint *left = [NSLayoutConstraint constraintWithItem:_segmentControlView attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeLeft multiplier:1 constant:0];
+    
+    NSLayoutConstraint *right = [NSLayoutConstraint constraintWithItem:_segmentControlView attribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeRight multiplier:1 constant:0];
+    
+    NSLayoutConstraint *top = [NSLayoutConstraint constraintWithItem:_segmentControlView attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.topLayoutGuide attribute:NSLayoutAttributeBottom multiplier:1 constant:0];
+    
+    NSLayoutConstraint *bottom = [NSLayoutConstraint constraintWithItem:_segmentControlView attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeBottom multiplier:1 constant:0];
+    
+    [self.view addConstraints:@[left, right, top, bottom]];
+    
     
     // Do any additional setup after loading the view.
 }

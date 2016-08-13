@@ -77,26 +77,19 @@ static NSString *const SegmentControlViewCellIdentifier = @"SegmentControlViewCe
 {
     //判断屏幕是否旋转
     _contentScrollView.contentInset = UIEdgeInsetsZero;
+
+    [self refreshUI];
+    [self.contentScrollView scrollToItemAtIndexPath:[NSIndexPath indexPathForRow:_currentPage inSection:0] atScrollPosition:UICollectionViewScrollPositionCenteredHorizontally animated:NO];
+    
+    
     if ([UIScreen mainScreen].bounds.size.width > [UIScreen mainScreen].bounds.size.height) {
         if (!self.isWidthGreateThanHeight) {
-            [self refreshUI];
-            [self updateTitleButtonFrame];
-            [self.pageViewArray enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                UIView *view = obj;
-                view.frame = CGRectMake(0, 0, self.contentScrollView.frame.size.width, self.contentScrollView.frame.size.height);
-            }];
-            self.contentScrollView.contentOffset = CGPointMake(_currentPage * self.contentScrollView.frame.size.width, 0);
+            [self setTitles:[self.titleStringArray copy]];
         }
         self.isWidthGreateThanHeight = YES;
     }else{
         if (self.isWidthGreateThanHeight) {
-            [self refreshUI];
-            [self updateTitleButtonFrame];
-            [self.pageViewArray enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                UIView *view = obj;
-                view.frame = CGRectMake(0, 0, self.contentScrollView.frame.size.width, self.contentScrollView.frame.size.height);
-            }];
-            self.contentScrollView.contentOffset = CGPointMake(_currentPage * self.contentScrollView.frame.size.width, 0);
+            [self setTitles:[self.titleStringArray copy]];
         }
         self.isWidthGreateThanHeight = NO;
     }
@@ -115,23 +108,16 @@ static NSString *const SegmentControlViewCellIdentifier = @"SegmentControlViewCe
     [self addSubview:self.titleScollView];
     [self addSubview:self.titleViewBottomLine];
     [self.titleScollView addSubview:self.bottomMoveLine];
-
 }
 
 - (void)refreshUI
 {
     if ((self.titleButtonArray.count == 1 && _isShowTitleViewWhenOnlyOneItem) || self.titleButtonArray.count > 1) {
         self.titleScollView.frame  = CGRectMake(0, 0, self.frame.size.width, TitleScrollViewHeight);
-//        ((UICollectionViewFlowLayout*)self.contentScrollView.collectionViewLayout).itemSize = CGSizeMake(self.frame.size.width, self.frame.size.height - TitleScrollViewHeight);
+        ((UICollectionViewFlowLayout*)self.contentScrollView.collectionViewLayout).itemSize = CGSizeMake(self.frame.size.width, self.frame.size.height - TitleScrollViewHeight);
         self.contentScrollView.frame = CGRectMake(0, TitleScrollViewHeight, self.frame.size.width, self.frame.size.height - TitleScrollViewHeight);
         self.titleViewBottomLine.frame = CGRectMake(0, TitleScrollViewHeight - 0.5, self.frame.size.width, 0.5);
-        if (self.underLineIsFitToTextWidth) {
-            self.bottomMoveLine.frame = CGRectMake((_underLineIsFitToTextWidth?self.titleMargin/2:0) + self.buttonMargin, TitleScrollViewHeight - 2, [self.titleWidthArray[0] floatValue], 2);
-        }else{
-            self.bottomMoveLine.frame = CGRectMake(0, TitleScrollViewHeight - 2, [self.titleWidthArray[0] floatValue], 2);
-        }
-        
-    
+        [self moveBottomLineAnimatedWithIndex:_currentPage time:0];
         
     }else{
         self.titleScollView.frame  = CGRectMake(0, 0, self.frame.size.width, 0);
@@ -193,13 +179,7 @@ static NSString *const SegmentControlViewCellIdentifier = @"SegmentControlViewCe
     self.titleScollView.contentSize = CGSizeMake(CGRectGetMaxX(lastButton.frame), 0);
     self.titleViewBottomLine.frame = CGRectMake(0, TitleScrollViewHeight - 0.5, CGRectGetMaxX(lastButton.frame), 0.5);
     
-    if (self.underLineIsFitToTextWidth) {
-        self.bottomMoveLine.frame = CGRectMake((_underLineIsFitToTextWidth?self.titleMargin/2.0:0) + self.buttonMargin, TitleScrollViewHeight - 2, [self.titleWidthArray[_currentPage] floatValue], 2);
-    }else{
-        self.bottomMoveLine.frame = CGRectMake(0, TitleScrollViewHeight - 2, [self.titleWidthArray[_currentPage] floatValue], 2);
-    }
     [self moveBottomLineAnimatedWithIndex:_currentPage time:0];
-    
 }
 
 - (void)setTitles:(NSArray*)titles
@@ -239,14 +219,18 @@ static NSString *const SegmentControlViewCellIdentifier = @"SegmentControlViewCe
         buttonX += self.buttonMargin;
         button.frame = CGRectMake(buttonX, 0, [self.titleWidthArray[i] floatValue] + (_underLineIsFitToTextWidth?self.titleMargin:0), TitleScrollViewHeight);
         [button addTarget:self action:@selector(titleButtonClicked:) forControlEvents:UIControlEventTouchUpInside];
-//        button.layer.borderWidth = 1;
-//        button.layer.borderColor = [UIColor redColor].CGColor;
         [self.titleScollView addSubview:button];
         [self.titleButtonArray addObject:button];
     }
     UIButton *lastButton = [self.titleButtonArray lastObject];
     self.titleScollView.contentSize = CGSizeMake(CGRectGetMaxX(lastButton.frame), 0);
     self.titleScollView.showsHorizontalScrollIndicator = NO;
+    
+    if (self.underLineIsFitToTextWidth) {
+        self.bottomMoveLine.frame = CGRectMake((_underLineIsFitToTextWidth?self.titleMargin/2:0) + self.buttonMargin, TitleScrollViewHeight - 2, [self.titleWidthArray[0] floatValue], 2);
+    }else{
+        self.bottomMoveLine.frame = CGRectMake(0, TitleScrollViewHeight - 2, [self.titleWidthArray[0] floatValue], 2);
+    }
 }
 
 - (void)setSelectedTitleWithIndex:(NSInteger)index
@@ -293,7 +277,7 @@ static NSString *const SegmentControlViewCellIdentifier = @"SegmentControlViewCe
         }
     }
     
-    if (buttonX + [self.titleWidthArray[index] floatValue] > self.contentScrollView.contentSize.width) {
+    if (buttonX + [self.titleWidthArray[index] floatValue] > self.titleScollView.contentSize.width) {
         assert(NO);
     }
     
@@ -420,10 +404,21 @@ static NSString *const SegmentControlViewCellIdentifier = @"SegmentControlViewCe
     [cell.contentView.subviews makeObjectsPerformSelector:@selector(removeFromSuperview)];
     
     UIView *view = self.pageViewArray[indexPath.row];
-    view.frame = CGRectMake(0, 0, self.contentScrollView.frame.size.width, self.contentScrollView.frame.size.height);
+//    view.frame = CGRectMake(0, 0, self.contentScrollView.frame.size.width, self.contentScrollView.frame.size.height);
     
     [cell.contentView addSubview:view];
     
+    view.translatesAutoresizingMaskIntoConstraints = NO;
+    
+    NSLayoutConstraint *left = [NSLayoutConstraint constraintWithItem:view attribute:NSLayoutAttributeLeft relatedBy:NSLayoutRelationEqual toItem:cell.contentView attribute:NSLayoutAttributeLeft multiplier:1 constant:0];
+    
+    NSLayoutConstraint *right = [NSLayoutConstraint constraintWithItem:view attribute:NSLayoutAttributeRight relatedBy:NSLayoutRelationEqual toItem:cell.contentView attribute:NSLayoutAttributeRight multiplier:1 constant:0];
+    
+    NSLayoutConstraint *top = [NSLayoutConstraint constraintWithItem:view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:cell.contentView attribute:NSLayoutAttributeTop multiplier:1 constant:0];
+    
+    NSLayoutConstraint *bottom = [NSLayoutConstraint constraintWithItem:view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:cell.contentView attribute:NSLayoutAttributeBottom multiplier:1 constant:0];
+    
+    [cell.contentView addConstraints:@[left, right, top, bottom]];
     return cell;
 }
 
